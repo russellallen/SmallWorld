@@ -1,0 +1,318 @@
+                                    //
+                                    //
+                                    //
+                                    //      Java Reflection Framework
+                                    //
+                                    //
+                                    //
+                                    
+                                    //
+                                    //      Conversion and primative access
+                                    //
+                                    
+                                    case 120: {  // New SmallJavaObject from String (classForResult, string)
+                                        SmallByteArray st = (SmallByteArray) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        SmallJavaObject sjo = new SmallJavaObject(classForResult, st.toString());
+                                        returnedValue = sjo;
+                                    } break;
+                                    
+                                    case 121: {  // toByteArray (classForResult, string)
+                                        SmallJavaObject sjo = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        returnedValue = new SmallByteArray(classForResult, (String) sjo.value);
+                                    } break;
+                                    
+                                    case 123: { // Get null (classForResult)
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            SmallJavaObject sjo = new SmallJavaObject(classForResult, null);
+                                            returnedValue = sjo;
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                    
+                                    case 124: {// get class (classForResult, javaObject)
+                                        SmallJavaObject javaObject = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            SmallJavaObject sjo = new SmallJavaObject(classForResult, javaObject.value.getClass());
+                                            returnedValue = sjo;
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                    
+                                    //
+                                    //      Class object access
+                                    //
+                                    
+                                    case 130: { // get name of class (classForResult, javaObjectOfClass)
+                                        SmallJavaObject javaObject = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            SmallJavaObject sjo = new SmallJavaObject(classForResult, ((Class) javaObject.value).getName());
+                                            returnedValue = sjo;
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                    
+                                    case 131: { // get parent(super) of class (classForResult, javaObjectOfClass)
+                                        SmallJavaObject javaObject = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            SmallJavaObject sjo = new SmallJavaObject(classForResult, ((Class) javaObject.value).getSuperclass());
+                                            returnedValue = sjo;
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                   
+                                    //
+                                    //      Reflection API
+                                    //
+                                    
+                                    case 140: {  // Get class object of name (classForResult, className)
+                                        SmallJavaObject className = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            // Java really, really, shouldn't have introduced primative types
+                                            // (I will have to come back to deal with others)
+                                            String classNameString = (String) className.value;
+                                            SmallJavaObject sjo;
+                                            if (classNameString.equals("int")) {
+                                                sjo = new SmallJavaObject(classForResult, Integer.TYPE);
+                                            } else {
+                                                sjo = new SmallJavaObject(classForResult, Class.forName(classNameString));
+                                            }
+                                            
+                                            returnedValue = sjo;
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                    
+                                    case 141: { // instantiate java object (classForResult, javaClass, arrayOfClasses, arrayOfArguments)
+                                        SmallObject arrayOfArguments = (SmallObject) stack[--stackTop];
+                                        SmallObject arrayOfClasses = (SmallObject) stack[--stackTop];
+                                        SmallJavaObject javaClass = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            if (arrayOfArguments.data.length == 0){
+                                                returnedValue = new SmallJavaObject(classForResult, ((Class) javaClass.value).newInstance());
+                                            } else {
+                                                // Setup array of classes and get constuctor
+                                                ArrayList<Class> cl = new ArrayList<Class>();
+                                                for ( SmallObject c : arrayOfClasses.data) {
+                                                    cl.add((Class) ((SmallJavaObject) c).value);
+                                                }
+                                                Constructor c = ((Class) javaClass.value).getConstructor(cl.toArray(new Class[cl.size()]));
+                                                
+                                                // Setup array of objects
+                                                java.util.List<Object> argsObjects = new ArrayList<Object>();
+                                                for (SmallObject o : arrayOfArguments.data){
+                                                    argsObjects.add(((SmallJavaObject) o).value);
+                                                }
+                                                Object obj = c.newInstance(argsObjects.toArray());
+                                                
+                                                returnedValue = new SmallJavaObject(classForResult, obj);
+                                                
+                                            }
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                  
+                                    case 142: { // get field of object (classForResult, objectReceiver, classForReceiver, stringFieldName)
+                                        SmallJavaObject stringFieldName = (SmallJavaObject) stack[--stackTop];
+                                        SmallJavaObject classForReceiver = (SmallJavaObject) stack[--stackTop];
+                                        SmallJavaObject objectReceiver = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            // Get class
+                                            Class c = ((Class) classForReceiver.value);
+                                            Field fieldObject = c.getField((String) stringFieldName.value);
+                                            Object r = (Object) fieldObject.get(objectReceiver);
+                                            
+                                            // Put in SmallJavaObject and return
+                                            returnedValue = new SmallJavaObject(classForResult, r);
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                    
+                                    case 143: { // invoke method (classForResult, objectReceiver, classForReceiver, stringMethodName, arrayOfClasses, arrayOfArguments)
+                                        SmallObject arrayOfArguments = (SmallObject) stack[--stackTop];
+                                        SmallObject arrayOfClasses = (SmallObject) stack[--stackTop];
+                                        SmallJavaObject stringMethodName = (SmallJavaObject) stack[--stackTop];
+                                        SmallJavaObject classForReceiver = (SmallJavaObject) stack[--stackTop];
+                                        SmallJavaObject objectReceiver = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            // Get array of Classes
+                                            ArrayList<Class> cl = new ArrayList<Class>();
+                                            for ( SmallObject c : arrayOfClasses.data) {
+                                                cl.add((Class) ((SmallJavaObject) c).value);
+                                            }
+                                            
+                                            // get method
+                                            String methodName = (String) stringMethodName.value;
+                                            Method compiledMethod = ((Class) classForReceiver.value).getMethod(methodName, cl.toArray(new Class[cl.size()]));
+                                            
+                                            
+                                            // Set up array of arguments and invoke method
+                                            java.util.List<Object> argsObjects = new ArrayList<Object>();
+                                            for (SmallObject o : arrayOfArguments.data){
+                                                argsObjects.add(((SmallJavaObject) o).value);
+                                            }
+                                            
+                                            Object r = compiledMethod.invoke(objectReceiver.value, argsObjects.toArray());
+                                            
+                                            // Put in SmallJavaObject and return
+                                            returnedValue = new SmallJavaObject(classForResult, r);
+                                            
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+
+                                    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                    //
+                                    //      Conversion and primative access
+                                    //
+                                    
+                                    case 120: {  // New SmallJavaObject from String (classForResult, string)
+                                        SmallByteArray st = (SmallByteArray) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        SmallJavaObject sjo = new SmallJavaObject(classForResult, st.toString());
+                                        returnedValue = sjo;
+                                    } break;
+                                    
+                                    case 121: {  // toByteArray (string, classForResult)
+                                        SmallObject classForResult = stack[--stackTop];
+                                        SmallJavaObject sjo = (SmallJavaObject) stack[--stackTop];
+                                        returnedValue = new SmallByteArray(classForResult, (String) sjo.value);
+                                    } break;
+                                    
+                                    case 123: { // Get null (classForResult)
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            SmallJavaObject sjo = new SmallJavaObject(classForResult, null);
+                                            returnedValue = sjo;
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                    
+                                    case 124: {// get class (classForResult, javaObject)
+                                        SmallJavaObject javaObject = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            SmallJavaObject sjo = new SmallJavaObject(classForResult, javaObject.value.getClass());
+                                            returnedValue = sjo;
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                    
+                                    //
+                                    //      Reflection API
+                                    //
+                                    
+                                    case 140: {  // Get class object (classForResult, className)
+                                        SmallJavaObject className = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            // Java really, really, shouldn't have introduced primative types
+                                            // (I will have to come back to deal with others)
+                                            String classNameString = (String) className.value;
+                                            SmallJavaObject sjo;
+                                            if (classNameString.equals("int")) {
+                                                sjo = new SmallJavaObject(classForResult, Integer.TYPE);
+                                            } else {
+                                                sjo = new SmallJavaObject(classForResult, Class.forName(classNameString));
+                                            }
+                                            
+                                            returnedValue = sjo;
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                    
+                                    case 141: { // instantiate java object (classForResult, javaClass, arrayOfClasses, arrayOfArguments)
+                                        SmallObject arrayOfArguments = (SmallObject) stack[--stackTop];
+                                        SmallObject arrayOfClasses = (SmallObject) stack[--stackTop];
+                                        SmallJavaObject javaClass = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            if (arrayOfArguments.data.length == 0){
+                                                returnedValue = new SmallJavaObject(classForResult, ((Class) javaClass.value).newInstance());
+                                            } else {
+                                                // Setup array of classes and get constuctor
+                                                ArrayList<Class> cl = new ArrayList<Class>();
+                                                for ( SmallObject c : arrayOfClasses.data) {
+                                                    cl.add((Class) ((SmallJavaObject) c).value);
+                                                }
+                                                Constructor c = ((Class) javaClass.value).getConstructor(cl.toArray(new Class[cl.size()]));
+                                                
+                                                // Setup array of objects
+                                                java.util.List<Object> argsObjects = new ArrayList<Object>();
+                                                for (SmallObject o : arrayOfArguments.data){
+                                                    argsObjects.add(((SmallJavaObject) o).value);
+                                                }
+                                                Object obj = c.newInstance(argsObjects.toArray());
+                                                
+                                                returnedValue = new SmallJavaObject(classForResult, obj);
+                                                
+                                            }
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                  
+                                    case 142: { // get field of object (classForResult, objectReceiver, classForReceiver, stringFieldName)
+                                        SmallJavaObject stringFieldName = (SmallJavaObject) stack[--stackTop];
+                                        SmallJavaObject classForReceiver = (SmallJavaObject) stack[--stackTop];
+                                        SmallJavaObject objectReceiver = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            // Get class
+                                            Class c = ((Class) classForReceiver.value);
+                                            Field fieldObject = c.getField((String) stringFieldName.value);
+                                            Object r = (Object) fieldObject.get(objectReceiver);
+                                            
+                                            // Put in SmallJavaObject and return
+                                            returnedValue = new SmallJavaObject(classForResult, r);
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
+                                    
+                                    case 143: { // invoke method (classForResult, objectReceiver, classForReceiver, stringMethodName, arrayOfClasses, arrayOfArguments)
+                                        SmallObject arrayOfArguments = (SmallObject) stack[--stackTop];
+                                        SmallObject arrayOfClasses = (SmallObject) stack[--stackTop];
+                                        SmallJavaObject stringMethodName = (SmallJavaObject) stack[--stackTop];
+                                        SmallJavaObject classForReceiver = (SmallJavaObject) stack[--stackTop];
+                                        SmallJavaObject objectReceiver = (SmallJavaObject) stack[--stackTop];
+                                        SmallObject classForResult = stack[--stackTop];
+                                        try {
+                                            // Get array of Classes
+                                            ArrayList<Class> cl = new ArrayList<Class>();
+                                            for ( SmallObject c : arrayOfClasses.data) {
+                                                cl.add((Class) ((SmallJavaObject) c).value);
+                                            }
+                                            
+                                            
+                                            // get method
+                                            String methodName = (String) stringMethodName.value;
+                                            Method compiledMethod = ((Class) classForReceiver.value).getMethod(methodName, cl.toArray(new Class[cl.size()]));
+                                            
+                                            
+                                            // Set up array of arguments and invoke method
+                                            java.util.List<Object> argsObjects = new ArrayList<Object>();
+                                            for (SmallObject o : arrayOfArguments.data){
+                                                argsObjects.add(((SmallJavaObject) o).value);
+                                            }
+                                            
+                                            Object r = compiledMethod.invoke(objectReceiver.value, argsObjects.toArray());
+                                            
+                                            // Put in SmallJavaObject and return
+                                            returnedValue = new SmallJavaObject(classForResult, r);
+                                            
+                                        } catch (Exception e) {throw new SmallException("Exception: " + e.toString(), context);}
+                                    } break;
