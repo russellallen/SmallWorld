@@ -1,0 +1,1 @@
+rm ./src/com/russell_allen/smallworld/*.class
