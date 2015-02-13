@@ -12,7 +12,7 @@ It isn't a version of Smalltalk-80, nor is it compatible with the Smalltalk ANSI
 
 ## Who wrote it? 
 
-It is a modified version of the original SmallWorld, which was written by A Prof. Tim Budd and can be found here. 
+It is a modified version of the original SmallWorld, which was written by A Prof. Tim Budd and can be found [here](http://web.engr.oregonstate.edu/~budd/SmallWorld/ReadMe.html). 
 Many thanks must go to Tim, whose work with SmallWorld and before that his pioneering Little Smalltalk form by far the major part of this system, and who was kind enough to allow the release of SmallWorld under the MIT Licence. 
 
 ## How fast is it? 
@@ -32,10 +32,8 @@ Very very slow :) SmallWorld is a very simple bytecode interpreter running on to
 *  added traditional 3 pane Class Browser 
 *  added False to Class>>classes 
 *  renamed 'Magnatude' to 'Magnitude' 
-*  changed image saving to gracefully handle SmallJavaObjects (references 
-*  replaced by nil 
-*  the image format now has a version number (as I realised it was likely 
-*  to change again in the future) 
+*  changed image saving to gracefully handle SmallJavaObjects (references replaced by nil) 
+*  the image format now has a version number (as I realised it was likely to change again in the future) 
 *  created Transcript as new starting point for image 
 *  removed Image and Color classes (they'll be returned later) 
 *  imported Squeak tinyBenchmark methods for fun 
